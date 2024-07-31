@@ -1,15 +1,16 @@
-// auth.go
 package routes
 
 import (
 	"github.com/gofiber/fiber/v2"
 	"scanNstore/cmd/controllers"
-
-	
 )
-// all auth routes including oauth
-func SetupAuthRoutes(router fiber.Router) {
-	router.Get("/status", controllers.Trail)
 
+func SetupAuthRoutes(router fiber.Router) {
+	
+
+	router.Post("/receipts", controllers.CreateReceipt)
+	router.Get("/receipts/:id", controllers.GetReceipt)
+	router.Get("/receipts", controllers.ListReceipts)
+	router.Post("/upload", controllers.UploadImage)
 
 }

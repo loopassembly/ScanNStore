@@ -1,31 +1,62 @@
-package handler
+package main
 
 import (
-	"net/http"
-	// "scanNstore/cmd/routes"
-	"github.com/gofiber/adaptor/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
+	"fmt"
+	"log"
+
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"scanNstore/cmd/initializers"
+	"scanNstore/cmd/routes"
 )
 
-// Handler is the entry point for Vercel
-func Handler(w http.ResponseWriter, r *http.Request) {
+func init() {
+
+	initializers.ConnectDB()
+}
+
+func main() {
 	app := fiber.New()
+
+	// Middleware
+	app.Use(logger.New())
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "*",
-		AllowHeaders:     "*",
-		AllowMethods:     "GET, POST",
+		AllowOrigins:     "*", 
+		AllowHeaders:     "Origin, Content-Type, Accept",
+		AllowMethods:     "GET, POST, PUT, DELETE, OPTIONS",
 		AllowCredentials: false,
 	}))
 
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Hello, World!")
+	// Mount the microservice routes under "/api"
+	micro := app.Group("/api")
+
+	// Setup auth routes
+	routes.SetupAuthRoutes(micro)
+
+	// Health check route
+	micro.Get("/healthchecker", func(c *fiber.Ctx) error {
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"status":  "success",
+			"message": "Welcome to Golang, Fiber, and GORM",
+		})
 	})
 
-	// app.Route("/auth", func(router fiber.Router) {
-	// 			routes.SetupAuthRoutes(router)
-	// 		})
+	// Index route
+	// Index route
+app.Get("/", func(c *fiber.Ctx) error {
+    return c.SendString("Welcome to ScanNStore")
+})
 
-	// Convert the Fiber app to an HTTP handler and serve the request
-	adaptor.FiberApp(app)(w, r)
+
+	// Catch-all route for 404 errors
+	app.All("*", func(c *fiber.Ctx) error {
+		path := c.Path()
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"status":  "fail",
+			"message": fmt.Sprintf("Path: %v does not exist on this server", path),
+		})
+	})
+
+	log.Fatal(app.Listen(":3000"))
 }
